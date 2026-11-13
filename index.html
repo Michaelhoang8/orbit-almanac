@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Orbit Almanac</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <a href="#">orbit almanac <span>◌</span></a
+      ><span>NUMERICAL DYNAMICS / INTEGRATOR STUDY</span
+      ><label class="upload">Open scenario<input id="file" type="file" accept=".json" /></label>
+    </header>
+    <main>
+      <section class="hero">
+        <p>THE TRAJECTORY IS ONLY HALF THE STORY</p>
+        <h1>Keep an eye<br />on the drift.</h1>
+        <div>
+          Three integrators. The same initial conditions.<br />Watch their paths—and their conserved
+          quantities.
+        </div>
+      </section>
+      <section class="settings">
+        <label
+          >Initial scene<select id="example">
+            <option value="binary">Circular binary</option>
+            <option value="trio">Three-body encounter</option>
+            <option value="drift">Isolated motion</option>
+          </select></label
+        ><label
+          >Time step<input
+            id="dt"
+            type="number"
+            min="0.0001"
+            max="0.1"
+            step="0.0001"
+            value="0.02" /></label
+        ><label
+          >Steps<input id="steps" type="number" min="1" max="20000" step="1" value="1000" /></label
+        ><label
+          >Softening<input
+            id="softening"
+            type="number"
+            min="0.001"
+            max="1"
+            step="0.001"
+            value="0.05" /></label
+        ><button id="run" class="primary">Compare integrators ↗</button
+        ><button id="cancel" disabled>Cancel</button>
+      </section>
+      <details>
+        <summary>Initial bodies <span id="body-count"></span></summary>
+        <p>
+          Dimensionless coordinates and velocities; G = 1. Bodies pass through one another under a
+          softened force law.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Mass</th>
+                <th>x</th>
+                <th>y</th>
+                <th>vx</th>
+                <th>vy</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="bodies"></tbody>
+          </table>
+        </div>
+        <button id="add">Add body</button>
+      </details>
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="results" hidden>
+        <div class="playback">
+          <label
+            >Trajectory<select id="method">
+              <option value="euler">Explicit Euler</option>
+              <option value="verlet" selected>Velocity Verlet</option>
+              <option value="rk4">Classical RK4</option>
+            </select></label
+          ><button id="play">Play trajectory</button
+          ><label class="scrub"
+            >Recorded frame<input id="frame" type="range" min="0" max="500" value="500" /></label
+          ><span id="time"></span>
+        </div>
+        <div class="scene">
+          <svg id="orbit" viewBox="0 0 800 520" role="img" aria-label="Orbital trajectories"></svg>
+          <aside>
+            <h2>At this instant</h2>
+            <div><span>Normalized energy change</span><strong id="energy"></strong></div>
+            <div><span>Total linear momentum</span><strong id="momentum"></strong></div>
+            <div><span>Center of mass</span><strong id="com"></strong></div>
+            <p id="legend"></p>
+            <p>
+              Equal spatial scale across all methods. Display samples are bounded; diagnostics
+              inspect every integration step.
+            </p>
+          </aside>
+        </div>
+        <section class="drift">
+          <h2>Energy drift across the run</h2>
+          <p>
+            Absolute normalized energy change · logarithmic scale · values below 10⁻¹⁶ share the
+            floor.
+          </p>
+          <svg
+            id="energy-plot"
+            viewBox="0 0 1000 210"
+            role="img"
+            aria-label="Energy drift comparison"
+          ></svg>
+          <p class="method-key">Euler / coral · Verlet / gold · RK4 / blue</p>
+        </section>
+        <section>
+          <h2>Conservation ledger</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Integrator</th>
+                  <th>Peak normalized energy drift</th>
+                  <th>Peak |Δ momentum|</th>
+                  <th>Peak center-of-mass error</th>
+                  <th>Recorded frames</th>
+                </tr>
+              </thead>
+              <tbody id="ledger"></tbody>
+            </table>
+          </div>
+          <p class="note">
+            Energy change is divided by initial kinetic energy + |initial potential energy|, or 1
+            for a zero-energy isolated state. Momentum and center-of-mass errors use absolute
+            dimensionless units. Peaks include every step, not just recorded frames.
+          </p>
+        </section>
+        <div class="exports">
+          <button id="save">Save scenario</button><button id="csv">Export trajectories CSV</button
+          ><button id="report">Export diagnostics JSON</button>
+        </div>
+      </section>
+      <details>
+        <summary>Force law, numerical limits & interpretation</summary>
+        <p>
+          The model uses pairwise acceleration proportional to displacement / (r² + ε²)^(3/2), with
+          G = 1. Potential energy uses −m₁m₂ / sqrt(r² + ε²). Softening changes the physical model
+          and prevents a singular force at coincident positions. This is not a collision simulation.
+        </p>
+        <p>
+          Explicit Euler updates positions and velocities from the start of each step. Velocity
+          Verlet averages start/end accelerations. RK4 evaluates four derivative stages. More
+          accurate-looking plots are not sufficient evidence of accurate dynamics; compare
+          diagnostics and repeat with a smaller time step.
+        </p>
+        <p>
+          Use 1–8 bodies, mass 0.001–100, initial coordinates within ±100, initial velocities within
+          ±20, time step 0.0001–0.1, softening 0.001–1, and up to 20,000 steps. Runs stop if state
+          magnitudes exceed one million or become nonfinite. There is no adaptive step size or
+          collision response.
+        </p>
+        <p>
+          At most 501 frames per method are retained. Playback animates recorded samples, not
+          wall-clock physical time. The circular binary is initialized for this softened force law;
+          the three-body scene is an illustrative encounter rather than a claimed stable orbit. All
+          work stays in your browser.
+        </p>
+      </details>
+      <footer>G = 1 · SOFTENED GRAVITY · VISIBLE NUMERICAL ERROR</footer>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
