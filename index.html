@@ -8,19 +8,72 @@
   </head>
   <body>
     <header>
-      <a href="#">orbit almanac <span>◌</span></a
-      ><span>NUMERICAL DYNAMICS / INTEGRATOR STUDY</span
-      ><label class="upload">Open scenario<input id="file" type="file" accept=".json" /></label>
+      <h1>Orbit Almanac</h1>
+      <nav>
+        <label class="upload">Open scenario<input id="file" type="file" accept=".json" /></label
+        ><button id="analysis-open">Diagnostics</button
+        ><button id="settings-open">Initial conditions</button>
+      </nav>
     </header>
     <main>
-      <section class="hero">
-        <p>THE TRAJECTORY IS ONLY HALF THE STORY</p>
-        <h1>Keep an eye<br />on the drift.</h1>
-        <div>
-          Three integrators. The same initial conditions.<br />Watch their paths—and their conserved
-          quantities.
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="results" hidden>
+        <div class="comparison-heading">
+          <h2>Integrator comparison</h2>
+          <span>Shared time and spatial scale</span>
+        </div>
+        <div class="orbits">
+          <article class="orbit-panel">
+            <h2>Explicit Euler</h2>
+            <svg
+              id="orbit-euler"
+              viewBox="0 0 400 400"
+              role="img"
+              aria-label="Explicit Euler trajectories"
+            ></svg>
+            <div class="readout">
+              <span>Normalized energy change</span><strong id="drift-euler"></strong>
+            </div>
+          </article>
+          <article class="orbit-panel">
+            <h2>Velocity Verlet</h2>
+            <svg
+              id="orbit"
+              viewBox="0 0 400 400"
+              role="img"
+              aria-label="Velocity Verlet trajectories"
+            ></svg>
+            <div class="readout">
+              <span>Normalized energy change</span><strong id="drift-verlet"></strong>
+            </div>
+          </article>
+          <article class="orbit-panel">
+            <h2>Classical RK4</h2>
+            <svg
+              id="orbit-rk4"
+              viewBox="0 0 400 400"
+              role="img"
+              aria-label="Classical RK4 trajectories"
+            ></svg>
+            <div class="readout">
+              <span>Normalized energy change</span><strong id="drift-rk4"></strong>
+            </div>
+          </article>
+        </div>
+        <p id="legend"></p>
+        <div class="playback">
+          <button id="play">Play trajectory</button
+          ><label class="scrub"
+            >Recorded frame<input id="frame" type="range" min="0" max="500" value="500" /></label
+          ><span id="time"></span>
         </div>
       </section>
+    </main>
+    <dialog id="settings-panel" aria-label="Initial conditions">
+      <div class="dialog-heading">
+        <h2>Initial conditions</h2>
+        <button id="settings-close" aria-label="Close initial conditions">×</button>
+      </div>
       <section class="settings">
         <label
           >Initial scene<select id="example">
@@ -73,75 +126,65 @@
         </div>
         <button id="add">Add body</button>
       </details>
-      <p id="status" role="status" aria-live="polite"></p>
-      <section id="results" hidden>
-        <div class="playback">
-          <label
-            >Trajectory<select id="method">
-              <option value="euler">Explicit Euler</option>
-              <option value="verlet" selected>Velocity Verlet</option>
-              <option value="rk4">Classical RK4</option>
-            </select></label
-          ><button id="play">Play trajectory</button
-          ><label class="scrub"
-            >Recorded frame<input id="frame" type="range" min="0" max="500" value="500" /></label
-          ><span id="time"></span>
-        </div>
-        <div class="scene">
-          <svg id="orbit" viewBox="0 0 800 520" role="img" aria-label="Orbital trajectories"></svg>
-          <aside>
-            <h2>At this instant</h2>
-            <div><span>Normalized energy change</span><strong id="energy"></strong></div>
-            <div><span>Total linear momentum</span><strong id="momentum"></strong></div>
-            <div><span>Center of mass</span><strong id="com"></strong></div>
-            <p id="legend"></p>
-            <p>
-              Equal spatial scale across all methods. Display samples are bounded; diagnostics
-              inspect every integration step.
-            </p>
-          </aside>
-        </div>
-        <section class="drift">
-          <h2>Energy drift across the run</h2>
-          <p>
-            Absolute normalized energy change · logarithmic scale · values below 10⁻¹⁶ share the
-            floor.
-          </p>
-          <svg
-            id="energy-plot"
-            viewBox="0 0 1000 210"
-            role="img"
-            aria-label="Energy drift comparison"
-          ></svg>
-          <p class="method-key">Euler / coral · Verlet / gold · RK4 / blue</p>
-        </section>
-        <section>
-          <h2>Conservation ledger</h2>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Integrator</th>
-                  <th>Peak normalized energy drift</th>
-                  <th>Peak |Δ momentum|</th>
-                  <th>Peak center-of-mass error</th>
-                  <th>Recorded frames</th>
-                </tr>
-              </thead>
-              <tbody id="ledger"></tbody>
-            </table>
-          </div>
-          <p class="note">
-            Energy change is divided by initial kinetic energy + |initial potential energy|, or 1
-            for a zero-energy isolated state. Momentum and center-of-mass errors use absolute
-            dimensionless units. Peaks include every step, not just recorded frames.
-          </p>
-        </section>
-        <div class="exports">
-          <button id="save">Save scenario</button><button id="csv">Export trajectories CSV</button
-          ><button id="report">Export diagnostics JSON</button>
-        </div>
+      <p id="settings-status" role="status"></p>
+    </dialog>
+    <dialog id="analysis-panel" aria-label="Conservation diagnostics">
+      <div class="dialog-heading">
+        <h2>Conservation diagnostics</h2>
+        <button id="analysis-close" aria-label="Close diagnostics">×</button>
+      </div>
+      <div class="instant">
+        <label
+          >Trajectory<select id="method">
+            <option value="euler">Explicit Euler</option>
+            <option value="verlet" selected>Velocity Verlet</option>
+            <option value="rk4">Classical RK4</option>
+          </select></label
+        >
+        <div><span>Normalized energy change</span><strong id="energy"></strong></div>
+        <div><span>Total linear momentum</span><strong id="momentum"></strong></div>
+        <div><span>Center of mass</span><strong id="com"></strong></div>
+      </div>
+      <section class="drift">
+        <h2>Energy drift across the run</h2>
+        <p>
+          Absolute normalized energy change · logarithmic scale · values below 10⁻¹⁶ share the
+          floor.
+        </p>
+        <svg
+          id="energy-plot"
+          viewBox="0 0 1000 210"
+          role="img"
+          aria-label="Energy drift comparison"
+        ></svg>
+        <p class="method-key">Euler / coral · Verlet / gold · RK4 / blue</p>
       </section>
+      <section>
+        <h2>Conservation ledger</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Integrator</th>
+                <th>Peak normalized energy drift</th>
+                <th>Peak |Δ momentum|</th>
+                <th>Peak center-of-mass error</th>
+                <th>Recorded frames</th>
+              </tr>
+            </thead>
+            <tbody id="ledger"></tbody>
+          </table>
+        </div>
+        <p class="note">
+          Energy change is divided by initial kinetic energy + |initial potential energy|, or 1 for
+          a zero-energy isolated state. Momentum and center-of-mass errors use absolute
+          dimensionless units. Peaks include every step, not just recorded frames.
+        </p>
+      </section>
+      <div class="exports">
+        <button id="save">Save scenario</button><button id="csv">Export trajectories CSV</button
+        ><button id="report">Export diagnostics JSON</button>
+      </div>
       <details>
         <summary>Force law, numerical limits & interpretation</summary>
         <p>
@@ -168,8 +211,7 @@
           work stays in your browser.
         </p>
       </details>
-      <footer>G = 1 · SOFTENED GRAVITY · VISIBLE NUMERICAL ERROR</footer>
-    </main>
+    </dialog>
     <script type="module" src="app.js"></script>
   </body>
 </html>

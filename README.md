@@ -4,6 +4,10 @@ A numerical-dynamics workbench that compares explicit Euler, velocity Verlet, an
 
 ![Orbit Almanac](docs/workbench.png)
 
+## Interface
+
+Euler, Verlet, and RK4 trajectories appear together with identical plot dimensions, spatial bounds, and recorded-frame playback. Each plot shows its current normalized energy change. Initial conditions open in a separate editor, while Diagnostics contains the energy chart, conservation ledger, model notes, and exports. Opening either panel pauses playback. On narrow screens the plots stack and share a sticky playback control.
+
 ## Run
 
 Requires Python 3.10+. No runtime dependencies, accounts, or API keys.

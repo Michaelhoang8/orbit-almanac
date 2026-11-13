@@ -31,6 +31,7 @@ const num = (n) => Number(n.toFixed(4)).toLocaleString(),
   sci = (n) => n.toExponential(3);
 function status(text) {
   $('status').textContent = text;
+  $('settings-status').textContent = text;
 }
 function stop() {
   playing = false;
@@ -41,6 +42,9 @@ function stop() {
 function controls() {
   for (const n of document.querySelectorAll('button,input,select')) n.disabled = busy;
   $('cancel').disabled = !busy;
+  $('settings-close').disabled = false;
+  $('analysis-close').disabled = false;
+  $('analysis-open').disabled = busy || !result;
   $('add').disabled = busy || draft.bodies.length >= 8;
   for (const n of document.querySelectorAll('[data-remove]'))
     n.disabled = busy || draft.bodies.length === 1;
@@ -124,6 +128,7 @@ function run(candidate = draft) {
     editor();
     frame = result.runs[0].samples.length - 1;
     render();
+    $('settings-panel').close();
     status(
       `Compared ${draft.steps.toLocaleString()} steps per method over ${num(draft.steps * draft.dt)} time units. Diagnostics checked every step.`,
     );
@@ -171,53 +176,55 @@ function render() {
     maxY = Math.max(...ys),
     cx = (minX + maxX) / 2,
     cy = (minY + maxY) / 2,
-    scale = Math.min(700 / Math.max(1, maxX - minX), 420 / Math.max(1, maxY - minY)),
-    x = (v) => 400 + (v - cx) * scale,
-    y = (v) => 260 - (v - cy) * scale,
-    root = $('orbit');
-  root.replaceChildren();
-  for (let i = 0; i <= 4; i++) {
-    const px = 50 + i * 175,
-      py = 50 + i * 105;
-    root.append(
-      svg('line', { x1: px, x2: px, y1: 35, y2: 485, stroke: '#223b48' }),
-      svg('line', { x1: 35, x2: 765, y1: py, y2: py, stroke: '#223b48' }),
-      svg(
-        'text',
-        { x: px, y: 505, 'font-size': 10, 'text-anchor': 'middle', fill: '#58788b' },
-        num(cx + (px - 400) / scale),
-      ),
-      svg(
-        'text',
-        { x: 26, y: py + 3, 'font-size': 10, 'text-anchor': 'end', fill: '#58788b' },
-        num(cy - (py - 260) / scale),
-      ),
-    );
+    scale = Math.min(300 / Math.max(1, maxX - minX), 300 / Math.max(1, maxY - minY)),
+    x = (v) => 200 + (v - cx) * scale,
+    y = (v) => 200 - (v - cy) * scale;
+  for (const orbitRun of result.runs) {
+    const run = orbitRun,
+      sample = run.samples[frame],
+      root = $(run.method === 'verlet' ? 'orbit' : 'orbit-' + run.method);
+    $('drift-' + run.method).textContent = sci(sample.energyDrift);
+    root.replaceChildren();
+    for (let i = 0; i <= 4; i++) {
+      const px = 50 + i * 75,
+        py = 50 + i * 75;
+      root.append(
+        svg('line', { x1: px, x2: px, y1: 35, y2: 350, stroke: '#333431' }),
+        svg('line', { x1: 35, x2: 350, y1: py, y2: py, stroke: '#333431' }),
+        svg(
+          'text',
+          { x: px, y: 375, 'font-size': 10, 'text-anchor': 'middle', fill: '#787b70' },
+          num(cx + (px - 200) / scale),
+        ),
+        svg(
+          'text',
+          { x: 30, y: py + 3, 'font-size': 10, 'text-anchor': 'end', fill: '#787b70' },
+          num(cy - (py - 200) / scale),
+        ),
+      );
+    }
+    sample.bodies.forEach((b, i) => {
+      const line = run.samples
+        .slice(0, frame + 1)
+        .map((s) => `${x(s.bodies[i].x)},${y(s.bodies[i].y)}`)
+        .join(' ');
+      root.append(
+        svg('polyline', {
+          points: line,
+          fill: 'none',
+          stroke: colors[i],
+          'stroke-width': 1.3,
+          opacity: 0.8,
+        }),
+        svg('circle', {
+          cx: x(b.x),
+          cy: y(b.y),
+          r: 3 + Math.min(4, Math.sqrt(b.mass)),
+          fill: colors[i],
+        }),
+      );
+    });
   }
-  sample.bodies.forEach((b, i) => {
-    const line = run.samples
-      .slice(0, frame + 1)
-      .map((s) => `${x(s.bodies[i].x)},${y(s.bodies[i].y)}`)
-      .join(' ');
-    root.append(
-      svg('polyline', {
-        points: line,
-        fill: 'none',
-        stroke: colors[i],
-        'stroke-width': 1.8,
-        opacity: 0.8,
-      }),
-      svg('circle', {
-        cx: x(b.x),
-        cy: y(b.y),
-        r: 5 + Math.min(7, Math.sqrt(b.mass) * 2),
-        fill: colors[i],
-      }),
-    );
-  });
-  root.append(
-    svg('text', { x: 55, y: 27, 'font-size': 12, fill: '#a7bdc9' }, methodNames[run.method]),
-  );
   const chart = $('energy-plot');
   chart.replaceChildren();
   const maxDrift = Math.max(
@@ -388,3 +395,11 @@ $('file').addEventListener('change', async () => {
 });
 editor();
 run();
+
+for (const name of ['settings', 'analysis']) {
+  $(name + '-open').addEventListener('click', () => {
+    stop();
+    $(name + '-panel').showModal();
+  });
+  $(name + '-close').addEventListener('click', () => $(name + '-panel').close());
+}
