@@ -530,3 +530,17 @@ td button {
     transition: none !important;
   }
 }
+.orbit-panel svg {
+  background: radial-gradient(ellipse at 50% 48%, #30332755, transparent 65%);
+  border-radius: 50%;
+}
+.orbit-panel h2 {
+  color: #c9c9ad;
+}
+@media (max-width: 760px) {
+  .comparison-heading > span {
+    max-width: 180px;
+    text-align: right;
+  }
+}
+.orbit-panel svg{border-radius:0}

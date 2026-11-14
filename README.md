@@ -8,6 +8,8 @@ A numerical-dynamics workbench that compares explicit Euler, velocity Verlet, an
 
 Euler, Verlet, and RK4 trajectories appear together with identical plot dimensions, spatial bounds, and recorded-frame playback. Each plot shows its current normalized energy change. Initial conditions open in a separate editor, while Diagnostics contains the energy chart, conservation ledger, model notes, and exports. Opening either panel pauses playback. On narrow screens the plots stack and share a sticky playback control.
 
+The most recent 15 recorded positions appear as a bright trail over the dimmer trajectory history, with soft halos around the current body positions. The trail uses recorded samples and does not interpolate new simulation states.
+
 ## Run
 
 Requires Python 3.10+. No runtime dependencies, accounts, or API keys.

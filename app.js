@@ -185,6 +185,10 @@ function render() {
       root = $(run.method === 'verlet' ? 'orbit' : 'orbit-' + run.method);
     $('drift-' + run.method).textContent = sci(sample.energyDrift);
     root.replaceChildren();
+    root.setAttribute(
+      'aria-label',
+      `${methodNames[run.method]} trajectories at time ${num(sample.time)}. Bright trails show up to 15 most recent recorded positions.`,
+    );
     for (let i = 0; i <= 4; i++) {
       const px = 50 + i * 75,
         py = 50 + i * 75;
@@ -214,13 +218,40 @@ function render() {
           fill: 'none',
           stroke: colors[i],
           'stroke-width': 1.3,
-          opacity: 0.8,
+          opacity: 0.3,
+        }),
+        svg('polyline', {
+          points: run.samples
+            .slice(Math.max(0, frame - 14), frame + 1)
+            .map((s) => `${x(s.bodies[i].x)},${y(s.bodies[i].y)}`)
+            .join(' '),
+          fill: 'none',
+          stroke: colors[i],
+          'stroke-width': 2,
+          'stroke-linecap': 'round',
+          opacity: 0.95,
+        }),
+        svg('circle', {
+          cx: x(b.x),
+          cy: y(b.y),
+          r: 12 + Math.min(4, Math.sqrt(b.mass)),
+          fill: colors[i],
+          opacity: 0.06,
+        }),
+        svg('circle', {
+          cx: x(b.x),
+          cy: y(b.y),
+          r: 7 + Math.min(4, Math.sqrt(b.mass)),
+          fill: colors[i],
+          opacity: 0.12,
         }),
         svg('circle', {
           cx: x(b.x),
           cy: y(b.y),
           r: 3 + Math.min(4, Math.sqrt(b.mass)),
           fill: colors[i],
+          stroke: '#fff4',
+          'stroke-width': 0.8,
         }),
       );
     });
